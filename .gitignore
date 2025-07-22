@@ -10,8 +10,10 @@ __pycache__/
 # Ignore environment variable files
 .env
 
+
 # Ignore virtual environment folders
 venv/
+.venv/
 .envrc
 
 # Ignore OS files
