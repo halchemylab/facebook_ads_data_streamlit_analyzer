@@ -3,6 +3,11 @@ import pandas as pd
 import plotly.express as px
 from openai import OpenAI
 import io
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # --- Configuration & Constants ---
 st.set_page_config(layout="wide", page_title="AI Facebook Ads Analyzer")
@@ -280,9 +285,11 @@ def main():
                 api_key_input = st.text_input(
                     "OpenAI API Key", 
                     type="password",
-                    help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets."
+                    help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file."
                 )
-                get_ai_recommendations(api_key_input, df)
+                # Use the provided key, or fallback to .env
+                api_key = api_key_input or os.getenv("OPENAI_API_KEY")
+                get_ai_recommendations(api_key, df)
 
 if __name__ == "__main__":
     main()
