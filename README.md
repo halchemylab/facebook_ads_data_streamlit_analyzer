@@ -2,19 +2,23 @@
 
 Welcome to the AI-Powered Facebook Ads Data Analyzer! This Streamlit application is designed to help you analyze your Facebook Ads performance data, visualize key metrics, and generate actionable recommendations using the power of AI.
 
+
 ## ✨ Features
 
 - **📊 Interactive KPI Dashboard:** Get a comprehensive overview of your campaign performance with key metrics like Total Spend, Impressions, Reach, Link Clicks, CTR, CPC, and more.
 - **📈 Performance Visualizations:** Dive deeper into your data with interactive charts that visualize performance over time and break it down by different dimensions like Ad Name and Ad Delivery.
 - **🤖 AI-Driven Recommendations:** Unlock actionable insights and optimization tips for your campaigns by leveraging the power of OpenAI's GPT models.
-- **📄 Data Validation:** The application automatically validates your uploaded data to ensure it contains the required columns and handles data type conversions for accurate analysis.
+- **� Natural Language Q&A:** Ask questions about your uploaded data in plain English (e.g., "Which ad had the highest CTR?" or "What was the average spend per day?") and get instant answers powered by AI.
+- **�📄 Data Validation:** The application automatically validates your uploaded data to ensure it contains the required columns and handles data type conversions for accurate analysis.
 - **📁 Support for Multiple File Types:** Upload your Facebook Ads export data as a `.csv` or `.xlsx` file.
+
 
 ##  How to Use
 
 1.  **Upload Your Data:** Click on the "Choose a Facebook Ads export file" button to upload your data file.
 2.  **View KPIs and Visualizations:** Once the data is uploaded and processed, you can view the overall performance KPIs and interactive charts.
 3.  **Generate AI Recommendations:** Expand the "Get AI-Powered Recommendations" section, enter your OpenAI API key, and click the "Generate AI Recommendations" button to receive optimization tips.
+4.  **Ask Questions About Your Data:** Expand the "Ask Questions About Your Data" section, enter your OpenAI API key (or reuse the previous one), type your question in plain English, and click "Get Answer" to receive an AI-powered response about your data.
 
 ## 📋 Data Requirements
 
