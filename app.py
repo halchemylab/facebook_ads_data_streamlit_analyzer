@@ -312,15 +312,64 @@ def main():
     
     if uploaded_file is not None:
         df = load_and_process_data(uploaded_file)
-        
         if df is not None:
-            st.subheader("Data Preview")
-            st.dataframe(df.head())
-            
+            # --- Data Filtering Section ---
+            st.subheader("🔎 Filter Your Data Before Analysis")
+            with st.expander("Filter Options", expanded=True):
+                # Date range filter
+                min_date = df['Reporting starts'].min()
+                max_date = df['Reporting ends'].max()
+                date_range = st.date_input(
+                    "Select reporting date range:",
+                    value=(min_date, max_date),
+                    min_value=min_date,
+                    max_value=max_date,
+                    key="date_range_filter"
+                )
+                # Ad name filter
+                ad_names = sorted(df['Ad name'].unique())
+                selected_ads = st.multiselect(
+                    "Filter by Ad Name (optional):",
+                    options=ad_names,
+                    default=ad_names,
+                    key="ad_name_filter"
+                )
+                # Campaign/Ad set filter (if available)
+                campaign_col = None
+                for col in ['Campaign name', 'Ad set name', 'Ad set', 'Campaign']:
+                    if col in df.columns:
+                        campaign_col = col
+                        break
+                if campaign_col:
+                    campaign_names = sorted(df[campaign_col].unique())
+                    selected_campaigns = st.multiselect(
+                        f"Filter by {campaign_col} (optional):",
+                        options=campaign_names,
+                        default=campaign_names,
+                        key="campaign_filter"
+                    )
+                else:
+                    selected_campaigns = None
+                # Apply filters
+                filtered_df = df.copy()
+                # Date filter
+                if isinstance(date_range, tuple) and len(date_range) == 2:
+                    filtered_df = filtered_df[
+                        (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0])) &
+                        (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1]))
+                    ]
+                # Ad name filter
+                if selected_ads:
+                    filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
+                # Campaign filter
+                if campaign_col and selected_campaigns:
+                    filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
+                st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
+                st.dataframe(filtered_df.head(20))
+
             # --- Display KPIs and Visuals ---
-            display_kpis(df)
-            generate_performance_charts(df)
-            
+            display_kpis(filtered_df)
+            generate_performance_charts(filtered_df)
 
             # --- AI Recommendations Section ---
             with st.expander("🤖 Get AI-Powered Recommendations", expanded=False):
@@ -333,7 +382,7 @@ def main():
                 )
                 # Use the provided key, or fallback to .env
                 api_key = api_key_input or os.getenv("OPENAI_API_KEY")
-                get_ai_recommendations(api_key, df)
+                get_ai_recommendations(api_key, filtered_df)
 
             # --- Data Q&A Section ---
             with st.expander("💬 Ask Questions About Your Data", expanded=False):
@@ -344,7 +393,7 @@ def main():
                     key="openai_api_key_input_qa"
                 )
                 api_key_qa = api_key_input_qa or os.getenv("OPENAI_API_KEY")
-                data_qa_section(api_key_qa, df)
+                data_qa_section(api_key_qa, filtered_df)
 
 if __name__ == "__main__":
     main()
