@@ -252,6 +252,48 @@ def get_ai_recommendations(api_key, df):
                 st.info("Please check your API key and network connection.")
 
 
+# --- Natural Language Q&A Function ---
+def data_qa_section(api_key, df):
+    """
+    Allows the user to ask natural language questions about the uploaded data and get answers from OpenAI.
+    """
+    st.header("💬 Ask Questions About Your Data")
+    st.info("Type a question about your Facebook Ads data (e.g., 'Which ad had the highest CTR?', 'What was the average spend per day?').", icon="❓")
+    user_question = st.text_input("Ask a question about your data:", key="data_qa_input")
+    if st.button("Get Answer", key="data_qa_button"):
+        if not api_key:
+            st.warning("Please enter your OpenAI API Key to use the Q&A feature.")
+            return
+        if not user_question.strip():
+            st.warning("Please enter a question.")
+            return
+        with st.spinner("Thinking..."):
+            try:
+                client = OpenAI(api_key=api_key)
+                # Provide a concise data sample and columns for context
+                df_sample = df.head(10).to_string()
+                columns = ', '.join(df.columns)
+                prompt = f"""
+You are a data analyst. The user uploaded a Facebook Ads dataset with the following columns: {columns}.
+Here is a sample of the data (first 10 rows):
+{df_sample}
+
+Answer the following question about the data. If you need to calculate something, explain your reasoning and show the answer clearly.
+Question: {user_question}
+"""
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful data analyst for Facebook Ads data."},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                st.markdown(response.choices[0].message.content)
+            except Exception as e:
+                st.error(f"Could not get an answer from AI. Error: {e}")
+                st.info("Please check your API key and network connection.")
+
+
 # --- Main Application ---
 def main():
     """
@@ -279,17 +321,30 @@ def main():
             display_kpis(df)
             generate_performance_charts(df)
             
+
             # --- AI Recommendations Section ---
             with st.expander("🤖 Get AI-Powered Recommendations", expanded=False):
                 st.info("Provide your OpenAI API key to unlock AI-driven insights. Your key is not stored.", icon="🔒")
                 api_key_input = st.text_input(
                     "OpenAI API Key", 
                     type="password",
-                    help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file."
+                    help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file.",
+                    key="openai_api_key_input"
                 )
                 # Use the provided key, or fallback to .env
                 api_key = api_key_input or os.getenv("OPENAI_API_KEY")
                 get_ai_recommendations(api_key, df)
+
+            # --- Data Q&A Section ---
+            with st.expander("💬 Ask Questions About Your Data", expanded=False):
+                api_key_input_qa = st.text_input(
+                    "OpenAI API Key (for Q&A)",
+                    type="password",
+                    help="You can use the same key as above or leave blank to use the .env key.",
+                    key="openai_api_key_input_qa"
+                )
+                api_key_qa = api_key_input_qa or os.getenv("OPENAI_API_KEY")
+                data_qa_section(api_key_qa, df)
 
 if __name__ == "__main__":
     main()
