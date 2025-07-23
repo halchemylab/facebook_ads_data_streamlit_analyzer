@@ -49,8 +49,9 @@ def load_and_process_data(uploaded_file):
 
     # --- 2. Data Type Conversion & Cleaning ---
     date_cols = ['Reporting starts', 'Reporting ends', 'Ends']
+    date_format = '%Y-%m-%d'  # Adjust if your data uses a different format
     for col in date_cols:
-        df[col] = pd.to_datetime(df[col], errors='coerce')
+        df[col] = pd.to_datetime(df[col], format=date_format, errors='coerce')
 
     numeric_cols = [
         'Results', 'Reach', 'Frequency', 'Cost per results', 'Amount spent (USD)', 
@@ -354,9 +355,10 @@ def main():
                 filtered_df = df.copy()
                 # Date filter
                 if isinstance(date_range, tuple) and len(date_range) == 2:
+                    date_format = '%Y-%m-%d'  # Should match the format used in load_and_process_data
                     filtered_df = filtered_df[
-                        (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0])) &
-                        (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1]))
+                        (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
+                        (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
                     ]
                 # Ad name filter
                 if selected_ads:
