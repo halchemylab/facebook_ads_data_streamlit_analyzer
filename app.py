@@ -132,15 +132,16 @@ def generate_performance_charts(df):
         'Impressions': 'sum'
     }).reset_index()
 
-    # Line chart for Spend
-    fig_spend = px.line(daily_data, x=date_axis, y='Amount spent (USD)', title='Daily Spend Over Time',
-                        labels={'Amount spent (USD)': 'Amount Spent (USD)', date_axis: 'Date'})
+    # Bar chart for Spend
+    fig_spend = px.bar(daily_data, x=date_axis, y='Amount spent (USD)', title='Daily Spend Over Time',
+                      labels={'Amount spent (USD)': 'Amount Spent (USD)', date_axis: 'Date'})
     st.plotly_chart(fig_spend, use_container_width=True)
 
-    # Line chart for Clicks and Impressions
-    fig_clicks_impressions = px.line(daily_data, x=date_axis, y=['Link clicks', 'Impressions'], 
-                                     title='Daily Link Clicks and Impressions',
-                                     labels={'value': 'Count', date_axis: 'Date'})
+    # Bar chart for Clicks and Impressions
+    fig_clicks_impressions = px.bar(daily_data, x=date_axis, y=['Link clicks', 'Impressions'],
+                                   barmode='group',
+                                   title='Daily Link Clicks and Impressions',
+                                   labels={'value': 'Count', date_axis: 'Date'})
     st.plotly_chart(fig_clicks_impressions, use_container_width=True)
 
     # --- Breakdown Bar Charts ---
