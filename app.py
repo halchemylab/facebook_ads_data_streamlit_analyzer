@@ -467,7 +467,15 @@ def main():
         key="sidebar_nav_dropdown"
     )
 
-    # ...existing code...
+    # --- API Key Input in Sidebar ---
+    st.sidebar.markdown("---")
+    api_key_sidebar = st.sidebar.text_input(
+        "Custom OpenAI API key",
+        type="password",
+        help="Enter your OpenAI API key. Leave blank to use the key from .env file.",
+        key="sidebar_api_key_input"
+    )
+    api_key = api_key_sidebar or os.getenv("OPENAI_API_KEY")
 
     # --- File Upload & Data Filtering Section ---
     if nav == "Upload & Filter":
@@ -561,13 +569,6 @@ def main():
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>🤖 AI-Powered Recommendations</div>", unsafe_allow_html=True)
         st.info("Provide your OpenAI API key to unlock AI-driven insights. Your key is not stored.", icon="🔒")
-        api_key_input = st.text_input(
-            "OpenAI API Key", 
-            type="password",
-            help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file.",
-            key="openai_api_key_input"
-        )
-        api_key = api_key_input or os.getenv("OPENAI_API_KEY")
         get_ai_recommendations(api_key, filtered_df)
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -576,14 +577,7 @@ def main():
         filtered_df = st.session_state['filtered_df']
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>💬 Ask Questions About Your Data</div>", unsafe_allow_html=True)
-        api_key_input_qa = st.text_input(
-            "OpenAI API Key (for Q&A)",
-            type="password",
-            help="You can use the same key as above or leave blank to use the .env key.",
-            key="openai_api_key_input_qa"
-        )
-        api_key_qa = api_key_input_qa or os.getenv("OPENAI_API_KEY")
-        data_qa_section(api_key_qa, filtered_df)
+        data_qa_section(api_key, filtered_df)
         st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
