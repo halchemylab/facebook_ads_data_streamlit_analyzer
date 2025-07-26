@@ -467,13 +467,7 @@ def main():
         key="sidebar_nav_dropdown"
     )
 
-    # --- Main Title ---
-    st.markdown("""
-        <div style='text-align:center; margin-bottom:2rem;'>
-            <h1 style='font-size:2.5rem; color:#2563eb; margin-bottom:0.2em;'>🚀 AI-Powered Facebook Ads Data Analyzer</h1>
-            <div style='font-size:1.2rem; color:#4a5568;'>Upload your raw Facebook Ads export file (<code>.csv</code> or <code>.xlsx</code>) to get started.<br>This tool validates your data, displays key metrics, visualizes performance, and provides AI-driven optimization tips.</div>
-        </div>
-    """, unsafe_allow_html=True)
+    # ...existing code...
 
     # --- File Upload & Data Filtering Section ---
     if nav == "Upload & Filter":
