@@ -398,106 +398,198 @@ Question: {user_question}
 
 
 # --- Main Application ---
+
 def main():
-    """
-    Main function to run the Streamlit application.
-    """
-    st.title("🚀 AI-Powered Facebook Ads Data Analyzer")
+    # --- Custom CSS for Modern Look ---
     st.markdown("""
-    Welcome, Henry! Upload your raw Facebook Ads export file (`.csv` or `.xlsx`) to get started.
-    This tool will validate your data, display key metrics, visualize performance, and provide AI-driven optimization tips.
-    """)
+        <style>
+        .main {
+            background: linear-gradient(120deg, #f8fafc 0%, #e0e7ef 100%);
+        }
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .stMetric {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 1.2em 0.5em 1.2em 0.5em;
+            margin-bottom: 0.5em;
+        }
+        .stDataFrame, .stTable {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .section-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 2rem 2rem 1.5rem 2rem;
+            margin-bottom: 2rem;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.7rem;
+        }
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin-bottom: 1.2rem;
+        }
+        .stButton>button {
+            border-radius: 8px;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 600;
+        }
+        .stTextInput>div>div>input[type='password'] {
+            background: #f1f5f9;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader(
-        "Choose a Facebook Ads export file", 
-        type=['csv', 'xlsx']
+    # --- Sidebar Navigation ---
+    st.sidebar.image("https://cdn-icons-png.flaticon.com/512/5968/5968764.png", width=60)
+    st.sidebar.title("Facebook Ads Analyzer")
+    st.sidebar.markdown("""
+        <span style='font-size:1.1em;'>Upload your Facebook Ads export and explore your data visually and interactively.</span>
+    """, unsafe_allow_html=True)
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Navigation**")
+    nav = st.sidebar.radio(
+        "Go to section:",
+        ["Upload & Filter", "KPIs & Overview", "Visualizations", "AI Insights", "Q&A"],
+        index=0
     )
-    
-    if uploaded_file is not None:
-        df = load_and_process_data(uploaded_file)
-        if df is not None:
-            # --- Data Filtering Section ---
-            st.subheader("🔎 Filter Your Data Before Analysis")
-            with st.expander("Filter Options", expanded=True):
-                # Date range filter
-                min_date = df['Reporting starts'].min()
-                max_date = df['Reporting ends'].max()
-                date_range = st.date_input(
-                    "Select reporting date range:",
-                    value=(min_date, max_date),
-                    min_value=min_date,
-                    max_value=max_date,
-                    key="date_range_filter"
-                )
-                # Ad name filter
-                ad_names = sorted(df['Ad name'].unique())
-                selected_ads = st.multiselect(
-                    "Filter by Ad Name (optional):",
-                    options=ad_names,
-                    default=ad_names,
-                    key="ad_name_filter"
-                )
-                # Campaign/Ad set filter (if available)
-                campaign_col = None
-                for col in ['Campaign name', 'Ad set name', 'Ad set', 'Campaign']:
-                    if col in df.columns:
-                        campaign_col = col
-                        break
-                if campaign_col:
-                    campaign_names = sorted(df[campaign_col].unique())
-                    selected_campaigns = st.multiselect(
-                        f"Filter by {campaign_col} (optional):",
-                        options=campaign_names,
-                        default=campaign_names,
-                        key="campaign_filter"
-                    )
-                else:
-                    selected_campaigns = None
-                # Apply filters
-                filtered_df = df.copy()
-                # Date filter
-                if isinstance(date_range, tuple) and len(date_range) == 2:
-                    date_format = '%Y-%m-%d'  # Should match the format used in load_and_process_data
-                    filtered_df = filtered_df[
-                        (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
-                        (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
-                    ]
-                # Ad name filter
-                if selected_ads:
-                    filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
-                # Campaign filter
-                if campaign_col and selected_campaigns:
-                    filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
-                st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
-                st.dataframe(filtered_df.head(20))
 
-            # --- Display KPIs and Visuals ---
-            display_kpis(filtered_df)
-            generate_performance_charts(filtered_df)
+    # --- Main Title ---
+    st.markdown("""
+        <div style='text-align:center; margin-bottom:2rem;'>
+            <h1 style='font-size:2.5rem; color:#2563eb; margin-bottom:0.2em;'>🚀 AI-Powered Facebook Ads Data Analyzer</h1>
+            <div style='font-size:1.2rem; color:#4a5568;'>Upload your raw Facebook Ads export file (<code>.csv</code> or <code>.xlsx</code>) to get started.<br>This tool validates your data, displays key metrics, visualizes performance, and provides AI-driven optimization tips.</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-            # --- AI Recommendations Section ---
-            with st.expander("🤖 Get AI-Powered Recommendations", expanded=False):
-                st.info("Provide your OpenAI API key to unlock AI-driven insights. Your key is not stored.", icon="🔒")
-                api_key_input = st.text_input(
-                    "OpenAI API Key", 
-                    type="password",
-                    help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file.",
-                    key="openai_api_key_input"
-                )
-                # Use the provided key, or fallback to .env
-                api_key = api_key_input or os.getenv("OPENAI_API_KEY")
-                get_ai_recommendations(api_key, filtered_df)
+    # --- File Upload & Data Filtering Section ---
+    if nav == "Upload & Filter":
+        with st.container():
+            st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>1. Upload & Filter Your Data</div>", unsafe_allow_html=True)
+            uploaded_file = st.file_uploader(
+                "Choose a Facebook Ads export file", 
+                type=['csv', 'xlsx']
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+            if uploaded_file is not None:
+                df = load_and_process_data(uploaded_file)
+                st.session_state['df'] = df
+    else:
+        df = st.session_state.get('df', None)
 
-            # --- Data Q&A Section ---
-            with st.expander("💬 Ask Questions About Your Data", expanded=False):
-                api_key_input_qa = st.text_input(
-                    "OpenAI API Key (for Q&A)",
-                    type="password",
-                    help="You can use the same key as above or leave blank to use the .env key.",
-                    key="openai_api_key_input_qa"
-                )
-                api_key_qa = api_key_input_qa or os.getenv("OPENAI_API_KEY")
-                data_qa_section(api_key_qa, filtered_df)
+    # --- Data Filtering Card (if data loaded) ---
+    if nav == "Upload & Filter" and st.session_state.get('df', None) is not None:
+        df = st.session_state['df']
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>2. Filter Options</div>", unsafe_allow_html=True)
+        min_date = df['Reporting starts'].min()
+        max_date = df['Reporting ends'].max()
+        date_range = st.date_input(
+            "Select reporting date range:",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date,
+            key="date_range_filter"
+        )
+        ad_names = sorted(df['Ad name'].unique())
+        selected_ads = st.multiselect(
+            "Filter by Ad Name (optional):",
+            options=ad_names,
+            default=ad_names,
+            key="ad_name_filter"
+        )
+        campaign_col = None
+        for col in ['Campaign name', 'Ad set name', 'Ad set', 'Campaign']:
+            if col in df.columns:
+                campaign_col = col
+                break
+        if campaign_col:
+            campaign_names = sorted(df[campaign_col].unique())
+            selected_campaigns = st.multiselect(
+                f"Filter by {campaign_col} (optional):",
+                options=campaign_names,
+                default=campaign_names,
+                key="campaign_filter"
+            )
+        else:
+            selected_campaigns = None
+        filtered_df = df.copy()
+        if isinstance(date_range, tuple) and len(date_range) == 2:
+            date_format = '%Y-%m-%d'
+            filtered_df = filtered_df[
+                (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
+                (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
+            ]
+        if selected_ads:
+            filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
+        if campaign_col and selected_campaigns:
+            filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
+        st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
+        st.dataframe(filtered_df.head(20))
+        st.session_state['filtered_df'] = filtered_df
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # --- KPIs & Overview Section ---
+    if nav == "KPIs & Overview" and st.session_state.get('filtered_df', None) is not None:
+        filtered_df = st.session_state['filtered_df']
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Key Performance Indicators</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-subtitle'>A quick glance at your most important metrics.</div>", unsafe_allow_html=True)
+        display_kpis(filtered_df)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # --- Visualizations Section ---
+    if nav == "Visualizations" and st.session_state.get('filtered_df', None) is not None:
+        filtered_df = st.session_state['filtered_df']
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Visual Data Explorer</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-subtitle'>Explore your data with interactive and insightful charts.</div>", unsafe_allow_html=True)
+        generate_performance_charts(filtered_df)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # --- AI Insights Section ---
+    if nav == "AI Insights" and st.session_state.get('filtered_df', None) is not None:
+        filtered_df = st.session_state['filtered_df']
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>🤖 AI-Powered Recommendations</div>", unsafe_allow_html=True)
+        st.info("Provide your OpenAI API key to unlock AI-driven insights. Your key is not stored.", icon="🔒")
+        api_key_input = st.text_input(
+            "OpenAI API Key", 
+            type="password",
+            help="You can find your API key on the OpenAI dashboard. For deployed apps, use st.secrets. Leave blank to use the key from .env file.",
+            key="openai_api_key_input"
+        )
+        api_key = api_key_input or os.getenv("OPENAI_API_KEY")
+        get_ai_recommendations(api_key, filtered_df)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # --- Q&A Section ---
+    if nav == "Q&A" and st.session_state.get('filtered_df', None) is not None:
+        filtered_df = st.session_state['filtered_df']
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>💬 Ask Questions About Your Data</div>", unsafe_allow_html=True)
+        api_key_input_qa = st.text_input(
+            "OpenAI API Key (for Q&A)",
+            type="password",
+            help="You can use the same key as above or leave blank to use the .env key.",
+            key="openai_api_key_input_qa"
+        )
+        api_key_qa = api_key_input_qa or os.getenv("OPENAI_API_KEY")
+        data_qa_section(api_key_qa, filtered_df)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
