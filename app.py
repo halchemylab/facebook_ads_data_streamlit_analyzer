@@ -460,10 +460,11 @@ def main():
     """, unsafe_allow_html=True)
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Navigation**")
-    nav = st.sidebar.radio(
+    nav = st.sidebar.selectbox(
         "Go to section:",
         ["Upload & Filter", "KPIs & Overview", "Visualizations", "AI Insights", "Q&A"],
-        index=0
+        index=0,
+        key="sidebar_nav_dropdown"
     )
 
     # --- Main Title ---
