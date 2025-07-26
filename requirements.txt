@@ -2,3 +2,7 @@ streamlit
 pandas
 plotly
 openai
+seaborn
+matplotlib
+numpy
+python-dotenv
