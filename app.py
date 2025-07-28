@@ -119,171 +119,199 @@ def generate_performance_charts(df):
     Creates and displays interactive charts using Plotly Express.
     """
     st.header("📈 Performance Visualizations")
+    st.markdown("""
+        <style>
+        .stTabs [data-baseweb="tab-list"] {flex-wrap: wrap;}
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- Tabs for Chart Types ---
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "Time Series", "Breakdown", "Scatter & Funnel", "Area & Pie", "Box & Ranking", "Correlation", "Comparison Mode"])
 
     # --- Time-Series Analysis ---
-    st.subheader("Performance Over Time")
-    
-    date_axis = st.selectbox(
-        "Choose date axis for time-series charts:", 
-        ('Reporting starts', 'Reporting ends'), 
-        key='date_axis_selector'
-    )
-    
-    # Aggregate data by day
-    daily_data = df.groupby(pd.Grouper(key=date_axis, freq='D')).agg({
-        'Amount spent (USD)': 'sum',
-        'Link clicks': 'sum',
-        'Impressions': 'sum'
-    }).reset_index()
-
-    # Bar chart for Spend
-    fig_spend = px.bar(daily_data, x=date_axis, y='Amount spent (USD)', title='Daily Spend Over Time',
-                      labels={'Amount spent (USD)': 'Amount Spent (USD)', date_axis: 'Date'})
-    st.plotly_chart(fig_spend, use_container_width=True)
-
-    # Bar chart for Clicks and Impressions
-    fig_clicks_impressions = px.bar(daily_data, x=date_axis, y=['Link clicks', 'Impressions'],
-                                   barmode='group',
-                                   title='Daily Link Clicks and Impressions',
-                                   labels={'value': 'Count', date_axis: 'Date'})
-    st.plotly_chart(fig_clicks_impressions, use_container_width=True)
-
-    # --- Heatmap of Daily Spend ---
-    st.subheader("Heatmap: Daily Spend")
-    heatmap_data = daily_data.copy()
-    heatmap_data['day'] = heatmap_data[date_axis].dt.day
-    heatmap_data['month'] = heatmap_data[date_axis].dt.month
-    pivot = heatmap_data.pivot_table(index='month', columns='day', values='Amount spent (USD)', fill_value=0)
-    fig, ax = plt.subplots(figsize=(12, 3))
-    sns.heatmap(pivot, cmap="YlGnBu", ax=ax, cbar_kws={'label': 'Spend (USD)'})
-    plt.xlabel('Day')
-    plt.ylabel('Month')
-    st.pyplot(fig)
+    with tab1:
+        st.subheader("Performance Over Time")
+        date_axis = st.selectbox(
+            "Choose date axis for time-series charts:",
+            ('Reporting starts', 'Reporting ends'),
+            key='date_axis_selector',
+            help="Select which date column to use for time-based charts."
+        )
+        metric_options = ['Amount spent (USD)', 'Link clicks', 'Impressions', 'Results']
+        selected_metrics = st.multiselect(
+            "Select metrics to plot over time:",
+            options=metric_options,
+            default=['Amount spent (USD)', 'Link clicks'],
+            help="Choose one or more metrics to visualize as a time series."
+        )
+        daily_data = df.groupby(pd.Grouper(key=date_axis, freq='D')).agg({m: 'sum' for m in metric_options}).reset_index()
+        chart_type = st.radio("Chart type:", ["Line", "Bar"], horizontal=True, key="ts_chart_type")
+        if selected_metrics:
+            if chart_type == "Line":
+                fig = px.line(daily_data, x=date_axis, y=selected_metrics, markers=True,
+                              title=f"Daily {', '.join(selected_metrics)} Over Time")
+            else:
+                fig = px.bar(daily_data, x=date_axis, y=selected_metrics, barmode='group',
+                             title=f"Daily {', '.join(selected_metrics)} Over Time")
+            st.plotly_chart(fig, use_container_width=True)
+            st.download_button("Download Data (CSV)", daily_data.to_csv(index=False), file_name="daily_data.csv")
+        # Heatmap
+        st.subheader("Heatmap: Daily Spend")
+        heatmap_data = daily_data.copy()
+        heatmap_data['day'] = heatmap_data[date_axis].dt.day
+        heatmap_data['month'] = heatmap_data[date_axis].dt.month
+        pivot = heatmap_data.pivot_table(index='month', columns='day', values='Amount spent (USD)', fill_value=0)
+        fig_hm, ax = plt.subplots(figsize=(12, 3))
+        sns.heatmap(pivot, cmap="YlGnBu", ax=ax, cbar_kws={'label': 'Spend (USD)'})
+        plt.xlabel('Day')
+        plt.ylabel('Month')
+        st.pyplot(fig_hm)
 
     # --- Breakdown Bar Charts ---
-    st.subheader("Performance Breakdown")
-    
-    breakdown_dim = st.selectbox(
-        "Select dimension to break down performance:", 
-        ('Ad name', 'Ad delivery'), 
-        key='breakdown_selector'
-    )
-
-    # Group by the selected dimension
-    breakdown_data = df.groupby(breakdown_dim).agg({
-        'Amount spent (USD)': 'sum',
-        'Link clicks': 'sum',
-        'Impressions': 'sum',
-        'Results': 'sum'
-    }).reset_index()
-    
-    # Calculate metrics for breakdown view
-    breakdown_data['CTR (link click-through rate)'] = (breakdown_data['Link clicks'] / breakdown_data['Impressions'] * 100).fillna(0)
-    breakdown_data['Cost per results'] = (breakdown_data['Amount spent (USD)'] / breakdown_data['Results']).fillna(0)
-
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        fig_spend_breakdown = px.bar(breakdown_data, x=breakdown_dim, y='Amount spent (USD)',
-                                     title=f'Amount Spent by {breakdown_dim}',
-                                     labels={'Amount spent (USD)': 'Amount Spent (USD)'})
-        st.plotly_chart(fig_spend_breakdown, use_container_width=True)
-        
-        fig_cpr_breakdown = px.bar(breakdown_data, x=breakdown_dim, y='Cost per results',
-                                     title=f'Cost per Result by {breakdown_dim}',
-                                     labels={'Cost per results': 'Cost per Result (USD)'})
-        st.plotly_chart(fig_cpr_breakdown, use_container_width=True)
-
-    with col2:
-        fig_ctr_breakdown = px.bar(breakdown_data, x=breakdown_dim, y='CTR (link click-through rate)',
-                                     title=f'Link CTR by {breakdown_dim}',
-                                     labels={'CTR (link click-through rate)': 'Link CTR (%)'})
-        st.plotly_chart(fig_ctr_breakdown, use_container_width=True)
-
-    # --- Scatter Plot: CPC vs. CTR by Ad ---
-    st.subheader("Scatter Plot: CPC vs. CTR by Ad")
-    if 'CPC (cost per link click) (USD)' in df.columns and 'CTR (link click-through rate)' in df.columns:
-        scatter_df = df.groupby('Ad name').agg({
-            'CPC (cost per link click) (USD)': 'mean',
-            'CTR (link click-through rate)': 'mean',
-            'Amount spent (USD)': 'sum',
-            'Impressions': 'sum'
-        }).reset_index()
-        fig_scatter = px.scatter(
-            scatter_df, x='CPC (cost per link click) (USD)', y='CTR (link click-through rate)',
-            size='Amount spent (USD)', color='Impressions',
-            hover_name='Ad name',
-            title='CPC vs. CTR by Ad (Bubble size: Spend, Color: Impressions)',
-            labels={'CPC (cost per link click) (USD)': 'CPC (USD)', 'CTR (link click-through rate)': 'CTR (%)'}
+    with tab2:
+        st.subheader("Performance Breakdown")
+        breakdown_dim = st.selectbox(
+            "Select dimension to break down performance:",
+            ('Ad name', 'Ad delivery'),
+            key='breakdown_selector',
+            help="Choose a column to group and compare performance metrics."
         )
-        st.plotly_chart(fig_scatter, use_container_width=True)
-
-    # --- Funnel Visualization ---
-    st.subheader("Funnel: Impressions → Clicks → Results")
-    funnel_vals = [df['Impressions'].sum(), df['Link clicks'].sum(), df['Results'].sum()]
-    funnel_labels = ['Impressions', 'Link Clicks', 'Results']
-    fig_funnel = go.Figure(go.Funnel(
-        y=funnel_labels,
-        x=funnel_vals,
-        textinfo="value+percent initial"
-    ))
-    fig_funnel.update_layout(title="Funnel: Impressions to Results")
-    st.plotly_chart(fig_funnel, use_container_width=True)
-
-    # --- Stacked Area Chart: Spend Over Time by Ad ---
-    st.subheader("Stacked Area Chart: Spend Over Time by Ad")
-    if 'Ad name' in df.columns:
-        area_df = df.groupby([date_axis, 'Ad name'])['Amount spent (USD)'].sum().reset_index()
-        area_pivot = area_df.pivot(index=date_axis, columns='Ad name', values='Amount spent (USD)').fillna(0)
-        fig_area = go.Figure()
-        for ad in area_pivot.columns:
-            fig_area.add_trace(go.Scatter(
-                x=area_pivot.index, y=area_pivot[ad],
-                mode='lines', stackgroup='one', name=ad
-            ))
-        fig_area.update_layout(title="Spend Over Time by Ad", xaxis_title="Date", yaxis_title="Spend (USD)")
-        st.plotly_chart(fig_area, use_container_width=True)
-
-    # --- Pie Chart: Spend by Ad Delivery ---
-    st.subheader("Pie Chart: Spend by Ad Delivery")
-    if 'Ad delivery' in df.columns:
-        pie_df = df.groupby('Ad delivery')['Amount spent (USD)'].sum().reset_index()
-        fig_pie = px.pie(pie_df, names='Ad delivery', values='Amount spent (USD)',
-                         title='Spend by Ad Delivery')
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    # --- Box Plot: Distribution of CPC by Ad Delivery ---
-    st.subheader("Box Plot: CPC Distribution by Ad Delivery")
-    if 'CPC (cost per link click) (USD)' in df.columns and 'Ad delivery' in df.columns:
-        fig_box = px.box(df, x='Ad delivery', y='CPC (cost per link click) (USD)',
-                        title='CPC Distribution by Ad Delivery',
-                        labels={'CPC (cost per link click) (USD)': 'CPC (USD)', 'Ad delivery': 'Ad Delivery'})
-        st.plotly_chart(fig_box, use_container_width=True)
-
-    # --- Ranking Table with Conditional Formatting ---
-    st.subheader("Ranking Table: Ads by Cost per Result")
-    if 'Ad name' in df.columns and 'Cost per results' in df.columns:
-        rank_df = df.groupby('Ad name').agg({
-            'Cost per results': 'mean',
+        breakdown_metrics = st.multiselect(
+            "Metrics to show:",
+            ['Amount spent (USD)', 'Link clicks', 'Impressions', 'Results', 'CTR (link click-through rate)', 'Cost per results'],
+            default=['Amount spent (USD)', 'Cost per results'],
+            help="Select which metrics to show in the breakdown charts."
+        )
+        breakdown_data = df.groupby(breakdown_dim).agg({
             'Amount spent (USD)': 'sum',
-            'Results': 'sum',
-            'Impressions': 'sum'
-        }).reset_index().sort_values('Cost per results')
-        st.dataframe(rank_df.style.background_gradient(cmap='RdYlGn_r', subset=['Cost per results']))
+            'Link clicks': 'sum',
+            'Impressions': 'sum',
+            'Results': 'sum'
+        }).reset_index()
+        breakdown_data['CTR (link click-through rate)'] = (breakdown_data['Link clicks'] / breakdown_data['Impressions'] * 100).fillna(0)
+        breakdown_data['Cost per results'] = (breakdown_data['Amount spent (USD)'] / breakdown_data['Results']).fillna(0)
+        for metric in breakdown_metrics:
+            fig = px.bar(breakdown_data, x=breakdown_dim, y=metric,
+                         title=f'{metric} by {breakdown_dim}',
+                         labels={metric: metric})
+            st.plotly_chart(fig, use_container_width=True)
+        st.download_button("Download Breakdown Data (CSV)", breakdown_data.to_csv(index=False), file_name="breakdown_data.csv")
+
+    # --- Scatter & Funnel ---
+    with tab3:
+        st.subheader("Scatter Plot: CPC vs. CTR by Ad")
+        if 'CPC (cost per link click) (USD)' in df.columns and 'CTR (link click-through rate)' in df.columns:
+            scatter_df = df.groupby('Ad name').agg({
+                'CPC (cost per link click) (USD)': 'mean',
+                'CTR (link click-through rate)': 'mean',
+                'Amount spent (USD)': 'sum',
+                'Impressions': 'sum'
+            }).reset_index()
+            fig_scatter = px.scatter(
+                scatter_df, x='CPC (cost per link click) (USD)', y='CTR (link click-through rate)',
+                size='Amount spent (USD)', color='Impressions',
+                hover_name='Ad name',
+                title='CPC vs. CTR by Ad (Bubble size: Spend, Color: Impressions)',
+                labels={'CPC (cost per link click) (USD)': 'CPC (USD)', 'CTR (link click-through rate)': 'CTR (%)'}
+            )
+            st.plotly_chart(fig_scatter, use_container_width=True)
+        st.subheader("Funnel: Impressions → Clicks → Results")
+        funnel_vals = [df['Impressions'].sum(), df['Link clicks'].sum(), df['Results'].sum()]
+        funnel_labels = ['Impressions', 'Link Clicks', 'Results']
+        fig_funnel = go.Figure(go.Funnel(
+            y=funnel_labels,
+            x=funnel_vals,
+            textinfo="value+percent initial"
+        ))
+        fig_funnel.update_layout(title="Funnel: Impressions to Results")
+        st.plotly_chart(fig_funnel, use_container_width=True)
+
+    # --- Area & Pie ---
+    with tab4:
+        st.subheader("Stacked Area Chart: Spend Over Time by Ad")
+        if 'Ad name' in df.columns:
+            date_axis = st.selectbox("Date axis for area chart:", ('Reporting starts', 'Reporting ends'), key="area_date_axis")
+            area_df = df.groupby([date_axis, 'Ad name'])['Amount spent (USD)'].sum().reset_index()
+            area_pivot = area_df.pivot(index=date_axis, columns='Ad name', values='Amount spent (USD)').fillna(0)
+            fig_area = go.Figure()
+            for ad in area_pivot.columns:
+                fig_area.add_trace(go.Scatter(
+                    x=area_pivot.index, y=area_pivot[ad],
+                    mode='lines', stackgroup='one', name=ad
+                ))
+            fig_area.update_layout(title="Spend Over Time by Ad", xaxis_title="Date", yaxis_title="Spend (USD)")
+            st.plotly_chart(fig_area, use_container_width=True)
+        st.subheader("Pie Chart: Spend by Ad Delivery")
+        if 'Ad delivery' in df.columns:
+            pie_df = df.groupby('Ad delivery')['Amount spent (USD)'].sum().reset_index()
+            fig_pie = px.pie(pie_df, names='Ad delivery', values='Amount spent (USD)',
+                             title='Spend by Ad Delivery')
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+    # --- Box & Ranking ---
+    with tab5:
+        st.subheader("Box Plot: CPC Distribution by Ad Delivery")
+        if 'CPC (cost per link click) (USD)' in df.columns and 'Ad delivery' in df.columns:
+            fig_box = px.box(df, x='Ad delivery', y='CPC (cost per link click) (USD)',
+                            title='CPC Distribution by Ad Delivery',
+                            labels={'CPC (cost per link click) (USD)': 'CPC (USD)', 'Ad delivery': 'Ad Delivery'})
+            st.plotly_chart(fig_box, use_container_width=True)
+        st.subheader("Ranking Table: Ads by Cost per Result")
+        if 'Ad name' in df.columns and 'Cost per results' in df.columns:
+            rank_df = df.groupby('Ad name').agg({
+                'Cost per results': 'mean',
+                'Amount spent (USD)': 'sum',
+                'Results': 'sum',
+                'Impressions': 'sum'
+            }).reset_index().sort_values('Cost per results')
+            st.dataframe(rank_df.style.background_gradient(cmap='RdYlGn_r', subset=['Cost per results']))
+            st.download_button("Download Ranking Table (CSV)", rank_df.to_csv(index=False), file_name="ranking_table.csv")
 
     # --- Correlation Matrix ---
-    st.subheader("Correlation Matrix of Numeric Metrics")
-    numeric_cols = [
-        'Results', 'Reach', 'Frequency', 'Cost per results', 'Amount spent (USD)',
-        'Impressions', 'CPM (cost per 1,000 impressions) (USD)', 'Link clicks',
-        'shop_clicks', 'CPC (cost per link click) (USD)', 'CTR (link click-through rate)',
-        'Clicks (all)', 'CTR (all)', 'CPC (all) (USD)'
-    ]
-    corr_df = df[numeric_cols].corr()
-    fig_corr, ax_corr = plt.subplots(figsize=(10, 6))
-    sns.heatmap(corr_df, annot=True, fmt=".2f", cmap="coolwarm", ax=ax_corr)
-    plt.title("Correlation Matrix of Numeric Metrics")
-    st.pyplot(fig_corr)
+    with tab6:
+        st.subheader("Correlation Matrix of Numeric Metrics")
+        numeric_cols = [
+            'Results', 'Reach', 'Frequency', 'Cost per results', 'Amount spent (USD)',
+            'Impressions', 'CPM (cost per 1,000 impressions) (USD)', 'Link clicks',
+            'shop_clicks', 'CPC (cost per link click) (USD)', 'CTR (link click-through rate)',
+            'Clicks (all)', 'CTR (all)', 'CPC (all) (USD)'
+        ]
+        corr_df = df[numeric_cols].corr()
+        fig_corr, ax_corr = plt.subplots(figsize=(10, 6))
+        sns.heatmap(corr_df, annot=True, fmt=".2f", cmap="coolwarm", ax=ax_corr)
+        plt.title("Correlation Matrix of Numeric Metrics")
+        st.pyplot(fig_corr)
+        st.download_button("Download Correlation Matrix (CSV)", corr_df.to_csv(), file_name="correlation_matrix.csv")
+
+    # --- Comparison Mode ---
+    with tab7:
+        st.subheader("Comparison Mode: Side-by-Side Analysis")
+        compare_dim = st.selectbox("Select dimension to compare:", ['Ad name', 'Ad delivery'], key="compare_dim")
+        compare_options = sorted(df[compare_dim].unique())
+        selected_compare = st.multiselect(f"Select up to 2 {compare_dim}s to compare:", compare_options, default=compare_options[:2], max_selections=2)
+        if len(selected_compare) == 2:
+            df1 = df[df[compare_dim] == selected_compare[0]]
+            df2 = df[df[compare_dim] == selected_compare[1]]
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"#### {selected_compare[0]}")
+                display_kpis(df1)
+            with col2:
+                st.markdown(f"#### {selected_compare[1]}")
+                display_kpis(df2)
+            st.markdown("---")
+            st.markdown(f"##### {selected_compare[0]} vs {selected_compare[1]}: Daily Spend")
+            for metric in ['Amount spent (USD)', 'Link clicks', 'Impressions']:
+                daily1 = df1.groupby('Reporting starts')[metric].sum().reset_index()
+                daily2 = df2.groupby('Reporting starts')[metric].sum().reset_index()
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=daily1['Reporting starts'], y=daily1[metric], mode='lines+markers', name=selected_compare[0]))
+                fig.add_trace(go.Scatter(x=daily2['Reporting starts'], y=daily2[metric], mode='lines+markers', name=selected_compare[1]))
+                fig.update_layout(title=f"{metric} Over Time", xaxis_title="Date", yaxis_title=metric)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Select two items to compare side-by-side.")
 
 
 def get_ai_recommendations(api_key, df):
