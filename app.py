@@ -375,7 +375,7 @@ def get_ai_recommendations(api_key, df):
                         {"role": "user", "content": prompt}
                     ]
                 )
-                
+                st.balloons()
                 st.markdown(response.choices[0].message.content)
 
             except Exception as e:
@@ -419,6 +419,7 @@ Question: {user_question}
                         {"role": "user", "content": prompt}
                     ]
                 )
+                st.balloons()
                 st.markdown(response.choices[0].message.content)
             except Exception as e:
                 st.error(f"Could not get an answer from AI. Error: {e}")
