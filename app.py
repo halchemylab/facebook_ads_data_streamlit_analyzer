@@ -522,8 +522,10 @@ def main():
             )
             st.markdown("</div>", unsafe_allow_html=True)
             if uploaded_file is not None:
-                df = load_and_process_data(uploaded_file)
-                st.session_state['df'] = df
+                with st.spinner("Processing your file and loading data..."):
+                    df = load_and_process_data(uploaded_file)
+                    st.session_state['df'] = df
+                st.balloons()
     else:
         df = st.session_state.get('df', None)
 
@@ -532,51 +534,52 @@ def main():
         df = st.session_state['df']
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>2. Filter Options</div>", unsafe_allow_html=True)
-        min_date = df['Reporting starts'].min()
-        max_date = df['Reporting ends'].max()
-        date_range = st.date_input(
-            "Select reporting date range:",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-            key="date_range_filter"
-        )
-        ad_names = sorted(df['Ad name'].unique())
-        selected_ads = st.multiselect(
-            "Filter by Ad Name (optional):",
-            options=ad_names,
-            default=ad_names,
-            key="ad_name_filter"
-        )
-        campaign_col = None
-        for col in ['Campaign name', 'Ad set name', 'Ad set', 'Campaign']:
-            if col in df.columns:
-                campaign_col = col
-                break
-        if campaign_col:
-            campaign_names = sorted(df[campaign_col].unique())
-            selected_campaigns = st.multiselect(
-                f"Filter by {campaign_col} (optional):",
-                options=campaign_names,
-                default=campaign_names,
-                key="campaign_filter"
+        with st.spinner("Applying filters and updating view..."):
+            min_date = df['Reporting starts'].min()
+            max_date = df['Reporting ends'].max()
+            date_range = st.date_input(
+                "Select reporting date range:",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                key="date_range_filter"
             )
-        else:
-            selected_campaigns = None
-        filtered_df = df.copy()
-        if isinstance(date_range, tuple) and len(date_range) == 2:
-            date_format = '%Y-%m-%d'
-            filtered_df = filtered_df[
-                (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
-                (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
-            ]
-        if selected_ads:
-            filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
-        if campaign_col and selected_campaigns:
-            filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
-        st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
-        st.dataframe(filtered_df.head(20))
-        st.session_state['filtered_df'] = filtered_df
+            ad_names = sorted(df['Ad name'].unique())
+            selected_ads = st.multiselect(
+                "Filter by Ad Name (optional):",
+                options=ad_names,
+                default=ad_names,
+                key="ad_name_filter"
+            )
+            campaign_col = None
+            for col in ['Campaign name', 'Ad set name', 'Ad set', 'Campaign']:
+                if col in df.columns:
+                    campaign_col = col
+                    break
+            if campaign_col:
+                campaign_names = sorted(df[campaign_col].unique())
+                selected_campaigns = st.multiselect(
+                    f"Filter by {campaign_col} (optional):",
+                    options=campaign_names,
+                    default=campaign_names,
+                    key="campaign_filter"
+                )
+            else:
+                selected_campaigns = None
+            filtered_df = df.copy()
+            if isinstance(date_range, tuple) and len(date_range) == 2:
+                date_format = '%Y-%m-%d'
+                filtered_df = filtered_df[
+                    (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
+                    (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
+                ]
+            if selected_ads:
+                filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
+            if campaign_col and selected_campaigns:
+                filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
+            st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
+            st.dataframe(filtered_df.head(20))
+            st.session_state['filtered_df'] = filtered_df
         st.markdown("</div>", unsafe_allow_html=True)
 
     # --- KPIs & Overview Section ---
