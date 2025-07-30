@@ -445,6 +445,11 @@ def main():
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             padding: 1.2em 0.5em 1.2em 0.5em;
             margin-bottom: 0.5em;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .stMetric:hover {
+            border-color: #FF4B4B;
         }
         .stDataFrame, .stTable {
             background: #fff;
