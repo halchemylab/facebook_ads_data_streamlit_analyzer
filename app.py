@@ -405,7 +405,7 @@ def data_qa_section(api_key, df):
                 df_sample = df.head(10).to_string()
                 columns = ', '.join(df.columns)
                 prompt = f"""
-You are a data analyst. The user uploaded a Facebook Ads dataset with the following columns: {columns}.
+You are a expert data analyst. The user uploaded a Facebook Ads dataset with the following columns: {columns}.
 Here is a sample of the data (first 10 rows):
 {df_sample}
 
