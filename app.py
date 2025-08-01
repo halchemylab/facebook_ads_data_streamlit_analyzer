@@ -72,8 +72,26 @@ def load_and_process_data(uploaded_file):
         # Keep as object/category type, replacing nulls with a placeholder
         df[col] = df[col].fillna('N/A')
 
-    st.success("File successfully uploaded and processed!")
     return df
+
+def load_multiple_files(uploaded_files):
+    """
+    Loads multiple uploaded files, processes them, adds a source file identifier, and concatenates them.
+    """
+    all_dfs = []
+    for uploaded_file in uploaded_files:
+        df = load_and_process_data(uploaded_file)
+        if df is not None:
+            df['Source File'] = uploaded_file.name
+            all_dfs.append(df)
+
+    if not all_dfs:
+        st.warning("No valid data could be loaded from any of the uploaded files.")
+        return None
+
+    # Concatenate all dataframes
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    return combined_df
 
 def display_kpis(df):
     """
@@ -287,7 +305,7 @@ def generate_performance_charts(df):
     # --- Comparison Mode ---
     with tab7:
         st.subheader("Comparison Mode: Side-by-Side Analysis")
-        compare_dim = st.selectbox("Select dimension to compare:", ['Ad name', 'Ad delivery'], key="compare_dim")
+        compare_dim = st.selectbox("Select dimension to compare:", ['Ad name', 'Ad delivery', 'Source File'], key="compare_dim")
         compare_options = sorted(df[compare_dim].unique())
         selected_compare = st.multiselect(f"Select up to 2 {compare_dim}s to compare:", compare_options, default=compare_options[:2], max_selections=2)
         if len(selected_compare) == 2:
@@ -516,16 +534,19 @@ def main():
         with st.container():
             st.markdown("<div class='section-card'>", unsafe_allow_html=True)
             st.markdown("<div class='section-title'>1. Upload & Filter Your Data</div>", unsafe_allow_html=True)
-            uploaded_file = st.file_uploader(
-                "Choose a Facebook Ads export file", 
-                type=['csv', 'xlsx']
+            uploaded_files = st.file_uploader(
+                "Choose one or more Facebook Ads export files",
+                type=['csv', 'xlsx'],
+                accept_multiple_files=True
             )
             st.markdown("</div>", unsafe_allow_html=True)
-            if uploaded_file is not None:
-                with st.spinner("Processing your file and loading data..."):
-                    df = load_and_process_data(uploaded_file)
+            if uploaded_files:
+                with st.spinner("Processing your files and loading data..."):
+                    df = load_multiple_files(uploaded_files)
                     st.session_state['df'] = df
-                st.balloons()
+                if df is not None:
+                    st.success(f"Successfully processed and combined {len(uploaded_files)} file(s)!")
+                    st.balloons()
     else:
         df = st.session_state.get('df', None)
 
@@ -544,6 +565,16 @@ def main():
                 max_value=max_date,
                 key="date_range_filter"
             )
+
+            # Filter by Source File
+            source_files = sorted(df['Source File'].unique())
+            selected_files = st.multiselect(
+                "Filter by Source File:",
+                options=source_files,
+                default=source_files,
+                key="source_file_filter"
+            )
+
             ad_names = sorted(df['Ad name'].unique())
             selected_ads = st.multiselect(
                 "Filter by Ad Name (optional):",
@@ -566,17 +597,25 @@ def main():
                 )
             else:
                 selected_campaigns = None
+            
+            # Apply filters
             filtered_df = df.copy()
             if isinstance(date_range, tuple) and len(date_range) == 2:
                 date_format = '%Y-%m-%d'
+                start_date = pd.to_datetime(date_range[0], format=date_format, errors='coerce')
+                end_date = pd.to_datetime(date_range[1], format=date_format, errors='coerce')
                 filtered_df = filtered_df[
-                    (filtered_df['Reporting starts'] >= pd.to_datetime(date_range[0], format=date_format, errors='coerce')) &
-                    (filtered_df['Reporting ends'] <= pd.to_datetime(date_range[1], format=date_format, errors='coerce'))
+                    (filtered_df['Reporting starts'] >= start_date) &
+                    (filtered_df['Reporting ends'] <= end_date)
                 ]
+            
+            if selected_files:
+                filtered_df = filtered_df[filtered_df['Source File'].isin(selected_files)]
             if selected_ads:
                 filtered_df = filtered_df[filtered_df['Ad name'].isin(selected_ads)]
             if campaign_col and selected_campaigns:
                 filtered_df = filtered_df[filtered_df[campaign_col].isin(selected_campaigns)]
+
             st.success(f"Filtered data: {len(filtered_df)} rows (of {len(df)})")
             st.dataframe(filtered_df.head(20))
             st.session_state['filtered_df'] = filtered_df
