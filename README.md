@@ -107,3 +107,32 @@ To run this application on your local machine, follow these steps:
     ```bash
     streamlit run app.py
     ```
+
+## 🚧 Limitations
+
+This application is a powerful tool for analyzing Facebook Ads data, but it has a few limitations to keep in mind:
+
+- **Data Format Dependency:** The app is specifically designed to parse the standard column structure of Facebook Ads exports. Custom exports with different column names or formats will not work without modifying the source code.
+- **API Key Requirement:** The AI-powered features (Recommendations and Q&A) require a valid OpenAI API key. These features will be disabled if a key is not provided.
+- **Performance with Large Datasets:** While the application can handle moderately sized datasets, very large files (e.g., millions of rows) may lead to slower performance or high memory usage.
+- **No Data Storage:** The application processes data in memory and does not store any of your information. You will need to re-upload your files each time you use the app.
+
+## 📄 License
+
+This project is licensed under the MIT License. You are free to use, modify, and distribute this software. See the `LICENSE` file for more details.
+
+## 🤝 Contributing
+
+Contributions from the community are welcome! If you'd like to contribute to the project, please follow these steps:
+
+1.  **Fork the repository** on GitHub.
+2.  **Create a new branch** for your feature or bug fix.
+3.  **Make your changes** and commit them with clear, descriptive messages.
+4.  **Push your changes** to your forked repository.
+5.  **Open a pull request** to merge your changes into the main branch.
+
+Please ensure that your code adheres to the existing style and that you have tested your changes thoroughly.
+
+## ⚖️ Disclaimer
+
+This application is provided for informational and educational purposes only. The AI-generated recommendations are based on the data provided and should not be considered financial or professional advice. Always use your own judgment and consult with a qualified professional before making any decisions based on the analysis provided by this tool.
