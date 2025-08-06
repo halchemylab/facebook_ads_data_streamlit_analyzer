@@ -94,7 +94,7 @@ To run this application on your local machine, follow these steps:
     pip install -r requirements.txt
     ```
 
-3.  **Set Up Environment Variables:**
+3.  **Set Up Environment Variables: (optional)**
 
     Create a `.env` file in the root directory of the project and add your OpenAI API key:
 
